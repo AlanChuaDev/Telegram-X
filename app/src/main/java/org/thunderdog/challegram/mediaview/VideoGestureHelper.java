@@ -17,6 +17,7 @@ package org.thunderdog.challegram.mediaview;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -37,6 +38,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -44,9 +46,9 @@ import org.thunderdog.challegram.tool.UI;
 /**
  * Gesture layer for the media viewer video player:
  * - double tap on the left/right third: seek back/forward (chained taps accumulate)
- * - long press: temporary fast playback
- * - vertical swipe on the left/right half: brightness / volume
+ * - long press, then vertical swipe on the left half: brightness; on the right half: volume
  * - horizontal swipe: scrub through the video
+ * - while scrubbing or dragging the progress bar: small window with the frame at that time
  * Also owns the overlay that draws the animations and the speed / settings menus.
  */
 public final class VideoGestureHelper implements MediaCellViewDetector.GestureHandler {
@@ -54,7 +56,6 @@ public final class VideoGestureHelper implements MediaCellViewDetector.GestureHa
   private static final int STATE_SEEK = 1;
   private static final int STATE_BRIGHTNESS = 2;
   private static final int STATE_VOLUME = 3;
-  private static final int STATE_SPEED = 4;
   private static final int STATE_IGNORED = 5;
 
   private static final long SEEK_CHAIN_MS = 650l;
@@ -65,6 +66,9 @@ public final class VideoGestureHelper implements MediaCellViewDetector.GestureHa
   private final Context context;
   private final Overlay overlay;
 
+  private @Nullable VideoFramePreview framePreview;
+  private boolean sliderScrubbing;
+
   private int state = STATE_IDLE;
   private boolean gestureAvailable;
   private float startX, startY;
@@ -73,9 +77,6 @@ public final class VideoGestureHelper implements MediaCellViewDetector.GestureHa
   private int chainZone;
   private long chainLastTapTime;
   private long chainAccumMs;
-
-  // speed boost
-  private float boostPreviousSpeed = 1f;
 
   // scrub
   private long scrubStartPosition, scrubDuration, scrubTarget;
@@ -163,6 +164,16 @@ public final class VideoGestureHelper implements MediaCellViewDetector.GestureHa
     return x > Screen.dp(24f) && x < w - Screen.dp(24f) && y > h * 0.18f && y < h - Screen.dp(130f);
   }
 
+  /**
+   * Whether the viewer must not close by dragging while this video is shown:
+   * a regular video can only be closed with the back button.
+   * MediaViewController asks this before it starts swipe-to-close.
+   */
+  public boolean wantsVerticalDrag (float x, float y) {
+    MediaItem item = cell.getMedia();
+    return item != null && item.getType() == MediaItem.TYPE_VIDEO && !item.isGifType() && !item.isSecret();
+  }
+
   @Override
   public boolean onTouchEvent (MotionEvent e) {
     final int action = e.getActionMasked();
@@ -210,11 +221,9 @@ public final class VideoGestureHelper implements MediaCellViewDetector.GestureHa
               return false;
             }
           } else if (Math.abs(dy) > Math.abs(dx) * 1.2f) {
-            if (startY < cell.getMeasuredHeight() * 0.12f || startY > cell.getMeasuredHeight() - Screen.dp(130f)) {
-              state = STATE_IGNORED;
-              return false;
-            }
-            beginLevel(startX < cell.getMeasuredWidth() / 2f ? STATE_BRIGHTNESS : STATE_VOLUME);
+            // brightness / volume start only after a long press, see onLongPress()
+            state = STATE_IGNORED;
+            return false;
           } else {
             return false;
           }
@@ -238,7 +247,7 @@ public final class VideoGestureHelper implements MediaCellViewDetector.GestureHa
         cancelLongPress();
         int prev = state;
         state = STATE_IDLE;
-        boolean owned = prev == STATE_SEEK || prev == STATE_BRIGHTNESS || prev == STATE_VOLUME || prev == STATE_SPEED;
+        boolean owned = prev == STATE_SEEK || prev == STATE_BRIGHTNESS || prev == STATE_VOLUME;
         if (owned) {
           finishGesture(prev, action == MotionEvent.ACTION_UP);
         }
@@ -251,8 +260,18 @@ public final class VideoGestureHelper implements MediaCellViewDetector.GestureHa
   private final Runnable longPressRunnable = this::onLongPress;
 
   private void onLongPress () {
-    if (state == STATE_IDLE && gestureAvailable && cell.isPlaying()) {
-      beginSpeedBoost();
+    if (state != STATE_IDLE || !gestureAvailable) {
+      return;
+    }
+    float w = cell.getMeasuredWidth();
+    float h = cell.getMeasuredHeight();
+    if (startY < h * 0.12f || startY > h - Screen.dp(130f)) {
+      return;
+    }
+    beginLevel(startX < w / 2f ? STATE_BRIGHTNESS : STATE_VOLUME);
+    if (state == STATE_BRIGHTNESS || state == STATE_VOLUME) {
+      overlay.showLevel(state == STATE_BRIGHTNESS, levelStart);
+      overlay.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
     }
   }
 
@@ -275,20 +294,13 @@ public final class VideoGestureHelper implements MediaCellViewDetector.GestureHa
           p.seekToMs(scrubTarget);
         }
         overlay.hideScrub();
+        hidePreview();
         break;
       }
       case STATE_BRIGHTNESS:
       case STATE_VOLUME:
         overlay.endLevel();
         break;
-      case STATE_SPEED: {
-        VideoPlayerView p = cell.getVideoPlayerView();
-        if (p != null) {
-          p.setPlaybackSpeed(boostPreviousSpeed);
-        }
-        overlay.hideSpeed();
-        break;
-      }
     }
     requestDisallow(false);
   }
@@ -300,23 +312,12 @@ public final class VideoGestureHelper implements MediaCellViewDetector.GestureHa
       finishGesture(state, false);
     }
     state = STATE_IDLE;
-    restoreBrightness();
-  }
-
-  // ---------------------------------------------------------------- speed boost
-
-  private void beginSpeedBoost () {
-    VideoPlayerView p = cell.getVideoPlayerView();
-    if (p == null) {
-      return;
+    sliderScrubbing = false;
+    overlay.hidePreview();
+    if (framePreview != null) {
+      framePreview.stop();
     }
-    state = STATE_SPEED;
-    boostPreviousSpeed = p.getPlaybackSpeed();
-    float boost = boostPreviousSpeed >= 2f ? 3f : 2f;
-    p.setPlaybackSpeed(boost);
-    overlay.showSpeed(boost);
-    overlay.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
-    requestDisallow(true);
+    restoreBrightness();
   }
 
   // ---------------------------------------------------------------- scrubbing
@@ -340,6 +341,57 @@ public final class VideoGestureHelper implements MediaCellViewDetector.GestureHa
     long delta = (long) ((e.getX() - startX) / w * span);
     scrubTarget = Math.max(0, Math.min(scrubDuration, scrubStartPosition + delta));
     overlay.showScrub(scrubTarget, scrubDuration, scrubTarget - scrubStartPosition);
+    overlay.showPreview(false, 0f, scrubTarget);
+    requestPreview(scrubTarget, scrubDuration);
+  }
+
+  // ---------------------------------------------------------------- frame preview
+
+  private void requestPreview (long positionMs, long durationMs) {
+    if (framePreview == null) {
+      framePreview = new VideoFramePreview(this::onPreviewFrame);
+    }
+    framePreview.request(cell.getMedia(), positionMs, durationMs);
+  }
+
+  private void onPreviewFrame (@Nullable Bitmap frame, boolean available) {
+    if (sliderScrubbing || state == STATE_SEEK) {
+      overlay.setPreviewFrame(frame, available);
+    }
+  }
+
+  private void hidePreview () {
+    overlay.hidePreview();
+    if (framePreview != null) {
+      framePreview.cancel();
+    }
+  }
+
+  /** The bottom progress bar was grabbed (active) or let go. Called by MediaViewController. */
+  public void onSliderState (boolean active, float factor) {
+    if (!active) {
+      sliderScrubbing = false;
+      hidePreview();
+      return;
+    }
+    sliderScrubbing = true;
+    onSliderValue(factor);
+  }
+
+  /** The progress bar is being dragged to factor (0..1). Called by MediaViewController. */
+  public void onSliderValue (float factor) {
+    if (!sliderScrubbing) {
+      return;
+    }
+    VideoPlayerView p = cell.getVideoPlayerView();
+    long duration = p != null ? p.getDurationMs() : 0;
+    if (duration <= 0) {
+      return;
+    }
+    float f = Math.max(0f, Math.min(1f, factor));
+    long position = (long) (f * duration);
+    overlay.showPreview(true, f, position);
+    requestPreview(position, duration);
   }
 
   // ---------------------------------------------------------------- brightness / volume
@@ -488,7 +540,7 @@ public final class VideoGestureHelper implements MediaCellViewDetector.GestureHa
           case 3:
             VideoPlayerPrefs.gesturesLocked = !VideoPlayerPrefs.gesturesLocked;
             toast(VideoPlayerPrefs.gesturesLocked ?
-              tr("已锁定：双击跳转、滑动、长按手势已关闭", "Locked: double-tap, swipe and long-press gestures are off") :
+              tr("已锁定：双击跳转、滑动、长按调节手势已关闭", "Locked: double-tap, swipe and long-press adjust gestures are off") :
               tr("已解锁手势", "Gestures unlocked"));
             break;
           case 4:
@@ -570,6 +622,11 @@ public final class VideoGestureHelper implements MediaCellViewDetector.GestureHa
     private boolean scrubActive;
     private long scrubPos, scrubDur, scrubDelta;
 
+    private boolean previewActive, previewFromSlider, previewAvailable = true;
+    private float previewFactor;
+    private long previewPos;
+    private @Nullable Bitmap previewFrame;
+
     Overlay (Context context) {
       super(context);
       setWillNotDraw(false);
@@ -625,6 +682,29 @@ public final class VideoGestureHelper implements MediaCellViewDetector.GestureHa
       invalidate();
     }
 
+    void showPreview (boolean fromSlider, float factor, long pos) {
+      previewActive = true;
+      previewFromSlider = fromSlider;
+      previewFactor = factor;
+      previewPos = pos;
+      invalidate();
+    }
+
+    void setPreviewFrame (@Nullable Bitmap frame, boolean available) {
+      previewFrame = frame;
+      previewAvailable = available;
+      if (previewActive) {
+        invalidate();
+      }
+    }
+
+    void hidePreview () {
+      previewActive = false;
+      previewFrame = null;
+      previewAvailable = true;
+      invalidate();
+    }
+
     @Override
     protected void onDraw (@NonNull Canvas c) {
       long now = SystemClock.uptimeMillis();
@@ -640,6 +720,9 @@ public final class VideoGestureHelper implements MediaCellViewDetector.GestureHa
       }
       if (scrubActive) {
         drawScrub(c);
+      }
+      if (previewActive) {
+        drawPreviewCard(c);
       }
       if (again) {
         postInvalidateOnAnimation();
@@ -755,6 +838,60 @@ public final class VideoGestureHelper implements MediaCellViewDetector.GestureHa
       textPaint.setTextSize(Screen.dp(14f));
       setShadow(false);
       c.drawText(">> " + VideoPlayerPrefs.formatSpeed(speedValue) + tr(" 倍速播放", " speed"), cx, top + Screen.dp(23f), textPaint);
+    }
+
+    private void drawPreviewCard (Canvas c) {
+      final float w = getWidth();
+      final float h = getHeight();
+      final Bitmap frame = previewFrame;
+      final float pad = Screen.dp(4f);
+      final float labelHeight = Screen.dp(22f);
+      final float imgWidth = frame != null ? frame.getWidth() : Screen.dp(140f);
+      final float imgHeight = frame != null ? frame.getHeight() : Screen.dp(80f);
+      final float cardWidth = imgWidth + pad * 2f;
+      final float cardHeight = imgHeight + pad + labelHeight;
+
+      final float cx;
+      final float bottom;
+      if (previewFromSlider) {
+        final float margin = Screen.dp(12f);
+        cx = Math.max(cardWidth / 2f + margin, Math.min(w - cardWidth / 2f - margin, previewFactor * w));
+        bottom = h - Screen.dp(140f);
+      } else {
+        cx = w / 2f;
+        bottom = h / 2f - Screen.dp(60f);
+      }
+      final float top = Math.max(Screen.dp(8f), bottom - cardHeight);
+
+      rect.set(cx - cardWidth / 2f, top, cx + cardWidth / 2f, top + cardHeight);
+      fillPaint.setColor(0xd9000000);
+      c.drawRoundRect(rect, Screen.dp(10f), Screen.dp(10f), fillPaint);
+
+      final float imgLeft = cx - imgWidth / 2f;
+      final float imgTop = top + pad;
+      rect.set(imgLeft, imgTop, imgLeft + imgWidth, imgTop + imgHeight);
+      if (frame != null) {
+        c.save();
+        path.reset();
+        path.addRoundRect(rect, Screen.dp(7f), Screen.dp(7f), Path.Direction.CW);
+        c.clipPath(path);
+        c.drawBitmap(frame, imgLeft, imgTop, null);
+        c.restore();
+      } else {
+        fillPaint.setColor(0x33ffffff);
+        c.drawRoundRect(rect, Screen.dp(7f), Screen.dp(7f), fillPaint);
+        if (!previewAvailable) {
+          textPaint.setColor(0xccffffff);
+          textPaint.setTextSize(Screen.dp(13f));
+          setShadow(false);
+          c.drawText(tr("这一段还没下载", "Not downloaded yet"), cx, imgTop + imgHeight / 2f + Screen.dp(5f), textPaint);
+        }
+      }
+
+      textPaint.setColor(0xffffffff);
+      textPaint.setTextSize(Screen.dp(14f));
+      setShadow(false);
+      c.drawText(Strings.buildDuration(Math.round(previewPos / 1000.0)), cx, top + cardHeight - Screen.dp(7f), textPaint);
     }
 
     private void drawScrub (Canvas c) {

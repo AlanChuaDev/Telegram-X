@@ -2092,6 +2092,22 @@ public class MediaCellView extends ViewGroup implements
     return gestureHelper != null && gestureHelper.wantsHorizontalDrag(x, y);
   }
 
+  boolean wantsVideoVerticalDrag (float x, float y) {
+    return gestureHelper != null && gestureHelper.wantsVerticalDrag(x, y);
+  }
+
+  void onVideoSliderState (boolean active, float factor) {
+    if (gestureHelper != null) {
+      gestureHelper.onSliderState(active, factor);
+    }
+  }
+
+  void onVideoSliderValue (float factor) {
+    if (gestureHelper != null) {
+      gestureHelper.onSliderValue(factor);
+    }
+  }
+
   void dispatchPlaybackSpeedChanged (float speed) {
     if (callback != null) {
       callback.onPlaybackSpeedChanged(media, speed);

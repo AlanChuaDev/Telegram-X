@@ -632,6 +632,22 @@ public class MediaView extends FrameLayoutFix {
     return isMoving;
   }
 
+  public boolean wantsVideoVerticalDrag (float x, float y) {
+    return baseCell != null && baseCell.wantsVideoVerticalDrag(x, y);
+  }
+
+  public void onVideoSliderState (boolean active, float factor) {
+    if (baseCell != null) {
+      baseCell.onVideoSliderState(active, factor);
+    }
+  }
+
+  public void onVideoSliderValue (float factor) {
+    if (baseCell != null) {
+      baseCell.onVideoSliderValue(factor);
+    }
+  }
+
   @Override
   public boolean onInterceptTouchEvent (MotionEvent e) {
     if ((disallowIntercept && (e.getAction() != MotionEvent.ACTION_DOWN /*|| !ignoreDisallowInterceptTouchEvent*/)) || disallowMove || disableTouch || detector == null) {

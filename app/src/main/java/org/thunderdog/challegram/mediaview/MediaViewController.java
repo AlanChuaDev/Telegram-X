@@ -5047,7 +5047,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           case MotionEvent.ACTION_DOWN: {
             startX = e.getX();
             startY = e.getY();
-            listenCloseBySlide = canCloseBySlide() && pipFactor == 0f && !mediaView.isZoomed() && mediaView.isBaseVisible();
+            listenCloseBySlide = canCloseBySlide() && pipFactor == 0f && !mediaView.isZoomed() && mediaView.isBaseVisible() && !mediaView.wantsVideoVerticalDrag(startX, startY);
             break;
           }
           case MotionEvent.ACTION_MOVE: {
@@ -5574,6 +5574,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   @Override
   public void onSetStateChanged (SliderView view, boolean isSetting) {
+    mediaView.onVideoSliderState(isSetting, view.getValue());
     if (isSetting) {
       mediaView.pauseIfPlaying();
     } else {
@@ -5584,6 +5585,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   @Override
   public void onValueChanged (SliderView view, float factor) {
     // TODO? mediaView.setSeekProgress(factor);
+    mediaView.onVideoSliderValue(factor);
   }
 
   @Override

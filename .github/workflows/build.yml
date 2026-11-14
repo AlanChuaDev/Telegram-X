@@ -1,0 +1,31 @@
+name: Build APK
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android/sdk/ndk /opt/hostedtoolcache/CodeQL
+          df -h
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          lfs: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+      - name: Setup SDK/NDK/Rust
+        run: scripts/setup.sh
+      - name: Add API credentials
+        run: |
+          echo "telegram.api_id=${{ secrets.TG_API_ID }}" >> local.properties
+          echo "telegram.api_hash=${{ secrets.TG_API_HASH }}" >> local.properties
+      - name: Build
+        run: ./gradlew :app:assembleLatestDebug -Pabi=arm64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: telegram-x-apk
+          path: app/build/outputs/apk/**/*.apk

@@ -16,11 +16,13 @@ package org.thunderdog.challegram.mediaview;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.drawable.GradientDrawable;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -50,6 +52,20 @@ public class VideoControlView extends FrameLayoutFix implements FactorAnimator.T
   private final TextView totalView;
   private final SliderView sliderView;
   private final PlayPauseButton playPauseButton;
+  private final LinearLayout toolsRow;
+  private final TextView speedChip;
+  private final TextView moreChip;
+
+  public interface ToolsListener {
+    void onSpeedChipClick ();
+    void onMoreChipClick ();
+  }
+
+  private @Nullable ToolsListener toolsListener;
+
+  public void setToolsListener (@Nullable ToolsListener listener) {
+    this.toolsListener = listener;
+  }
 
   public VideoControlView (Context context) {
     super(context);
@@ -89,6 +105,82 @@ public class VideoControlView extends FrameLayoutFix implements FactorAnimator.T
     playPauseButton.setTranslationX(-Screen.dp(44f));
     playPauseButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(44f), Screen.dp(56f), Gravity.LEFT | Gravity.BOTTOM));
     addView(playPauseButton);
+
+    // Speed / settings chips above the control bar
+    toolsRow = new LinearLayout(context);
+    toolsRow.setOrientation(LinearLayout.HORIZONTAL);
+    toolsRow.setVisibility(View.GONE);
+    params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.RIGHT | Gravity.BOTTOM);
+    params.rightMargin = Screen.dp(12f);
+    params.bottomMargin = Screen.dp(56f + 10f);
+    toolsRow.setLayoutParams(params);
+
+    speedChip = newChip(context, VideoPlayerPrefs.formatSpeed(1f));
+    speedChip.setOnClickListener(v -> {
+      if (isToolsClickable() && toolsListener != null) {
+        toolsListener.onSpeedChipClick();
+      }
+    });
+    toolsRow.addView(speedChip);
+
+    moreChip = newChip(context, VideoPlayerPrefs.tr("设置", "Settings"));
+    LinearLayout.LayoutParams moreParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+    moreParams.leftMargin = Screen.dp(8f);
+    moreChip.setLayoutParams(moreParams);
+    moreChip.setOnClickListener(v -> {
+      if (isToolsClickable() && toolsListener != null) {
+        toolsListener.onMoreChipClick();
+      }
+    });
+    toolsRow.addView(moreChip);
+    addView(toolsRow);
+    updateToolsClickable();
+  }
+
+  private static TextView newChip (Context context, String text) {
+    TextView chip = new NoScrollTextView(context);
+    chip.setText(text);
+    chip.setTextColor(0xffffffff);
+    chip.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
+    chip.setTypeface(Fonts.getRobotoRegular());
+    chip.setGravity(Gravity.CENTER);
+    chip.setSingleLine(true);
+    chip.setPadding(Screen.dp(12f), Screen.dp(7f), Screen.dp(12f), Screen.dp(7f));
+    GradientDrawable bg = new GradientDrawable();
+    bg.setColor(0x80000000);
+    bg.setCornerRadius(Screen.dp(16f));
+    chip.setBackground(bg);
+    return chip;
+  }
+
+  @Override
+  public void setAlpha (float alpha) {
+    super.setAlpha(alpha);
+    updateToolsClickable();
+  }
+
+  // Chips must not swallow taps while the controls are hidden
+  private void updateToolsClickable () {
+    //noinspection ConstantConditions
+    if (toolsRow == null || speedChip == null || moreChip == null) {
+      return;
+    }
+    boolean on = getAlpha() > .5f && toolsRow.getAlpha() > .5f;
+    speedChip.setClickable(on);
+    moreChip.setClickable(on);
+  }
+
+  private boolean isToolsClickable () {
+    return getAlpha() > .5f && toolsRow.getAlpha() > .5f && toolsRow.getVisibility() == View.VISIBLE;
+  }
+
+  /** Shown only for regular videos (not GIFs, not gallery videos in the editor). */
+  public void setToolsVisible (boolean visible) {
+    toolsRow.setVisibility(visible ? View.VISIBLE : View.GONE);
+  }
+
+  public void setSpeedLabel (float speed) {
+    speedChip.setText(VideoPlayerPrefs.formatSpeed(speed));
   }
 
   private @Nullable VideoTimelineView timelineView;
@@ -168,6 +260,8 @@ public class VideoControlView extends FrameLayoutFix implements FactorAnimator.T
     }
     nowView.setAlpha(alpha);
     totalView.setAlpha(alpha);
+    toolsRow.setAlpha(alpha);
+    updateToolsClickable();
   }
 
   public float getInnerAlpha () {

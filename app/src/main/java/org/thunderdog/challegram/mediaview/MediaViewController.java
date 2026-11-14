@@ -3302,6 +3302,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           videoSliderView.setFile(stack.getCurrent().getSourceGalleryFile());
           MediaItem item = stack.getCurrent();
           videoSliderView.setShowPlayPause(item.isVideoOrGif(), animated && videoFactor != 0f);
+          videoSliderView.setToolsVisible(isEnhancedPlayerItem(item));
+          videoSliderView.setSpeedLabel(1f);
           videoSliderView.setIsPlaying(false, true);
           videoSliderView.setSlideEnabled(item.canSeekVideo());
           if (item.isVideoOrGif() && commonFactor < 1f) {
@@ -3331,6 +3333,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         videoSliderView.updateSecondarySeek(TD.getFileOffsetProgress(item.getTargetFile()), TD.getFilePrefixProgress(item.getTargetFile()));
         videoSliderView.setFile(item.getSourceGalleryFile());
         videoSliderView.setShowPlayPause(item.isVideoOrGif(), animated);
+        videoSliderView.setToolsVisible(isEnhancedPlayerItem(item));
+        videoSliderView.setSpeedLabel(1f);
         videoSliderView.setIsPlaying(false, true);
         videoSliderView.setSlideEnabled(item.canSeekVideo());
         if (item.isVideoOrGif() && (commonFactor < 1f || item.isAutoplay())) {
@@ -3433,6 +3437,17 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   public void onSeekProgress (MediaItem item, long nowMs, long durationMs, float progress) {
     if (stack.getCurrent() == item && videoSliderView != null) {
       videoSliderView.updateSeek(nowMs, durationMs, progress);
+    }
+  }
+
+  private static boolean isEnhancedPlayerItem (MediaItem item) {
+    return item != null && item.getType() == MediaItem.TYPE_VIDEO && !item.isGifType() && !item.isSecret();
+  }
+
+  @Override
+  public void onPlaybackSpeedChanged (MediaItem item, float speed) {
+    if (stack.getCurrent() == item && videoSliderView != null) {
+      videoSliderView.setSpeedLabel(speed);
     }
   }
 
@@ -5326,6 +5341,23 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           }
         });
         videoSliderView.setSliderListener(this);
+        videoSliderView.setToolsListener(new VideoControlView.ToolsListener() {
+          @Override
+          public void onSpeedChipClick () {
+            MediaCellView cell = mediaView != null ? mediaView.findCellForItem(stack.getCurrent()) : null;
+            if (cell != null) {
+              cell.showSpeedMenu();
+            }
+          }
+
+          @Override
+          public void onMoreChipClick () {
+            MediaCellView cell = mediaView != null ? mediaView.findCellForItem(stack.getCurrent()) : null;
+            if (cell != null) {
+              cell.showMoreMenu();
+            }
+          }
+        });
         videoSliderView.setInnerAlpha(0f);
         videoSliderView.setAlpha(0f);
         videoSliderView.setTranslationY(Screen.dp(56f));

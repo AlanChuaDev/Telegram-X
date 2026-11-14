@@ -32,6 +32,7 @@ import androidx.annotation.RequiresApi;
 import androidx.media3.common.C;
 import androidx.media3.common.Effect;
 import androidx.media3.common.PlaybackException;
+import androidx.media3.common.PlaybackParameters;
 import androidx.media3.common.Player;
 import androidx.media3.common.VideoSize;
 import androidx.media3.exoplayer.ExoPlayer;
@@ -137,6 +138,86 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
     this.isLooping = isLooping;
   }
 
+  private boolean wantsLooping (@Nullable MediaItem item) {
+    return forceLooping || (item != null && (item.isSecret() || item.isGifType() || (item.getType() == MediaItem.TYPE_VIDEO && VideoPlayerPrefs.loopEnabled)));
+  }
+
+  /** Re-applies the user-controlled loop toggle (from the player settings menu) to the current video. */
+  public void setUserLooping (boolean userLooping) {
+    boolean target = wantsLooping(currentItem);
+    setLooping(target);
+    if (player != null) {
+      player.setRepeatMode(target ? Player.REPEAT_MODE_ONE : Player.REPEAT_MODE_OFF);
+    }
+  }
+
+  // Enhanced playback controls
+
+  private float playbackSpeed = 1f;
+
+  public float getPlaybackSpeed () {
+    return playbackSpeed;
+  }
+
+  public void setPlaybackSpeed (float speed) {
+    this.playbackSpeed = speed;
+    if (player != null) {
+      player.setPlaybackParameters(new PlaybackParameters(speed));
+    }
+  }
+
+  public long getPositionMs () {
+    return player != null ? Math.max(0, player.getCurrentPosition()) : 0;
+  }
+
+  public long getDurationMs () {
+    if (player == null) {
+      return 0;
+    }
+    long duration = player.getDuration();
+    return duration == C.TIME_UNSET ? 0 : Math.max(0, duration);
+  }
+
+  public void seekToMs (long positionMs) {
+    if (player != null) {
+      long duration = getDurationMs();
+      long target = Math.max(0, positionMs);
+      if (duration > 0) {
+        target = Math.min(target, duration);
+      }
+      player.seekTo(target);
+      updateTimes();
+    }
+  }
+
+  /** @return the new position, in milliseconds */
+  public long seekByMs (long deltaMs) {
+    long target = getPositionMs() + deltaMs;
+    seekToMs(target);
+    return target;
+  }
+
+  private static @Nullable String rememberKey (@Nullable MediaItem item) {
+    if (item == null || item.getType() != MediaItem.TYPE_VIDEO || item.isGifType() || item.isSecret() || item.needTrim()) {
+      return null;
+    }
+    TdApi.File file = item.getTargetFile();
+    if (file == null || file.remote == null || StringUtils.isEmpty(file.remote.uniqueId)) {
+      return null;
+    }
+    return file.remote.uniqueId;
+  }
+
+  private void rememberCurrentPosition (@Nullable MediaItem item) {
+    String key = rememberKey(item);
+    if (key != null && player != null) {
+      long duration = getDurationMs();
+      if (duration > 30_000l) {
+        VideoPlayerPrefs.rememberPosition(context, key, getPositionMs(), duration);
+      }
+    }
+  }
+
   public void setNoProgressUpdates (boolean noProgressUpdates) {
     this.noProgressUpdates = noProgressUpdates;
   }
@@ -154,7 +235,7 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
     }
     prepareTextureView();
     setMuted(mediaItem != null && mediaItem.needMute());
-    setLooping(forceLooping || (mediaItem != null && (mediaItem.isSecret() || mediaItem.isGifType())));
+    setLooping(wantsLooping(mediaItem));
     setNoProgressUpdates(mediaItem != null && mediaItem.isSecret());
     if (mediaItem != null) {
       TdlibManager.instance().calls().addCurrentCallListener(this);
@@ -164,12 +245,17 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
     if (this.currentItem == mediaItem) {
       return;
     }
+    final MediaItem previousItem = this.currentItem;
     this.currentItem = mediaItem;
     if (isDetached) {
       return;
     }
+    if (mediaItem != null && !seekToSavedPosition) {
+      playbackSpeed = 1f;
+    }
     if (mediaItem == null) {
       if (player != null) {
+        rememberCurrentPosition(previousItem);
         player.setVideoTextureView(null);
         Views.removeFromParent(targetView);
         player.release();
@@ -229,6 +315,9 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
       });
 
       this.player.setPlayWhenReady(isPlaying);
+      if (playbackSpeed != 1f) {
+        this.player.setPlaybackParameters(new PlaybackParameters(playbackSpeed));
+      }
       if (targetView.getParent() == null) {
         this.parentView.addView(targetView, addIndex);
       }
@@ -250,6 +339,14 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
     if (seekToSavedPosition) {
       seekToSavedPosition = false;
       player.seekTo(savedPosition);
+    } else {
+      String key = rememberKey(mediaItem);
+      if (key != null && mediaItem.getVideoDuration(false, TimeUnit.MILLISECONDS) > 30_000l) {
+        long remembered = VideoPlayerPrefs.getRememberedPosition(context, key);
+        if (remembered > 0) {
+          player.seekTo(remembered);
+        }
+      }
     }
     if (forcePlay) {
       setPlaying(true);

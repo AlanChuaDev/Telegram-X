@@ -116,6 +116,7 @@ public class MediaCellView extends ViewGroup implements
   private @Nullable VideoPlayerView playerView;
   private CellButtonView buttonView;
   private CellVideoView videoParentView;
+  private VideoGestureHelper gestureHelper;
   private BufferingProgressBarWrap bufferingProgressView;
 
   private final ClippingSubsamplingImageView subsamplingImageView;
@@ -271,6 +272,12 @@ public class MediaCellView extends ViewGroup implements
     this.bufferingProgressView = new BufferingProgressBarWrap(context);
     this.bufferingProgressView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
     addView(bufferingProgressView);
+
+    this.gestureHelper = new VideoGestureHelper(this);
+    View gestureOverlay = gestureHelper.getOverlayView();
+    gestureOverlay.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+    addView(gestureOverlay);
+    this.detector.setGestureHandler(gestureHelper);
   }
 
   private boolean subsamplingModeEnabled, subsamplingImageLoaded;
@@ -575,19 +582,35 @@ public class MediaCellView extends ViewGroup implements
       } else {
         float ratio;
 
-        ratio = Math.min(
-          (float) availWidth / (float) imageWidth,
-          (float) availHeight / (float) imageHeight
-        );
-        imageWidth *= ratio;
-        imageHeight *= ratio;
+        final int aspectMode = media != null && media.getType() == MediaItem.TYPE_VIDEO && !media.isGifType() && !media.isSecret() ?
+          VideoPlayerPrefs.getAspectMode(getContext()) : VideoPlayerPrefs.ASPECT_FIT;
 
-        ratio = Math.min(
-          (float) availWidth / (float) imageWidthOriginal,
-          (float) availHeight / (float) imageHeightOriginal
-        );
-        imageWidthOriginal *= ratio;
-        imageHeightOriginal *= ratio;
+        if (aspectMode == VideoPlayerPrefs.ASPECT_STRETCH) {
+          imageWidth = imageWidthOriginal = availWidth;
+          imageHeight = imageHeightOriginal = availHeight;
+        } else {
+          final boolean fill = aspectMode == VideoPlayerPrefs.ASPECT_FILL;
+
+          ratio = fill ? Math.max(
+            (float) availWidth / (float) imageWidth,
+            (float) availHeight / (float) imageHeight
+          ) : Math.min(
+            (float) availWidth / (float) imageWidth,
+            (float) availHeight / (float) imageHeight
+          );
+          imageWidth *= ratio;
+          imageHeight *= ratio;
+
+          ratio = fill ? Math.max(
+            (float) availWidth / (float) imageWidthOriginal,
+            (float) availHeight / (float) imageHeightOriginal
+          ) : Math.min(
+            (float) availWidth / (float) imageWidthOriginal,
+            (float) availHeight / (float) imageHeightOriginal
+          );
+          imageWidthOriginal *= ratio;
+          imageHeightOriginal *= ratio;
+        }
       }
 
       for (int i = 0; i < childCount; i++) {
@@ -656,6 +679,9 @@ public class MediaCellView extends ViewGroup implements
   private boolean destroyed;
 
   public void destroy () {
+    if (gestureHelper != null) {
+      gestureHelper.release();
+    }
     setMedia(null);
     setSubsamplingModeEnabled(false);
     recycle(subsamplingImageView);
@@ -711,6 +737,9 @@ public class MediaCellView extends ViewGroup implements
   }
 
   public void onCellActivityPause () {
+    if (gestureHelper != null) {
+      gestureHelper.release();
+    }
     if (playerView != null) {
       playerView.detach();
     }
@@ -1656,7 +1685,7 @@ public class MediaCellView extends ViewGroup implements
     final int childCount = getChildCount();
     for (int i = 0; i < childCount; i++) {
       View child = getChildAt(i);
-      if (child != null && child != buttonView) {
+      if (child != null && child != buttonView && (gestureHelper == null || child != gestureHelper.getOverlayView())) {
         detector.zoomView(this, child);
       }
     }
@@ -1899,6 +1928,9 @@ public class MediaCellView extends ViewGroup implements
   }
 
   public void detach () {
+    if (gestureHelper != null) {
+      gestureHelper.release();
+    }
     gifReceiver.detach();
     imageReceiver.detach();
     imagePreviewReceiver.detach();
@@ -1917,6 +1949,7 @@ public class MediaCellView extends ViewGroup implements
     void onPlayPause (MediaItem item, boolean isPlaying);
     void onPlayStarted (MediaItem item, boolean isPlaying);
     void onSeekSecondaryProgress (MediaItem item, float offset, float progress);
+    default void onPlaybackSpeedChanged (MediaItem item, float speed) { }
   }
 
   private Callback callback;
@@ -1984,6 +2017,9 @@ public class MediaCellView extends ViewGroup implements
   private boolean hideStaticView;
 
   private void resetVideoState () {
+    if (gestureHelper != null) {
+      gestureHelper.release();
+    }
     setHideStaticView(false, false);
     updateCanSeek();
     isPlaying = false;
@@ -2032,6 +2068,78 @@ public class MediaCellView extends ViewGroup implements
     this.timeTotal = totalDuration;
     if (callback != null) {
       callback.onSeekProgress(media, now, totalDuration, (float) ((double) now / (double) totalDuration));
+    }
+  }
+
+  // Enhanced player controls
+
+  @Nullable VideoPlayerView getVideoPlayerView () {
+    return playerView;
+  }
+
+  boolean canSeekCurrentVideo () {
+    return media != null && media.canSeekVideo();
+  }
+
+  /** Regular (non-GIF, non-gallery, non-secret) video that is already playing in the viewer. */
+  boolean canUseVideoGestures () {
+    return media != null && media.getType() == MediaItem.TYPE_VIDEO && !media.isGifType() && !media.isSecret() &&
+      !forceTouchMode && !destroyed && playerView != null && hideStaticView && videoReady &&
+      getParent() instanceof MediaView && ((MediaView) getParent()).canZoom(this);
+  }
+
+  boolean wantsVideoHorizontalDrag (float x, float y) {
+    return gestureHelper != null && gestureHelper.wantsHorizontalDrag(x, y);
+  }
+
+  void dispatchPlaybackSpeedChanged (float speed) {
+    if (callback != null) {
+      callback.onPlaybackSpeedChanged(media, speed);
+    }
+  }
+
+  void applyAspectMode () {
+    if (videoParentView != null) {
+      videoParentView.requestLayout();
+    }
+    if (playerView != null) {
+      playerView.requestLayout();
+    }
+  }
+
+  public void showSpeedMenu () {
+    if (gestureHelper != null) {
+      gestureHelper.showSpeedMenu();
+    }
+  }
+
+  public void showMoreMenu () {
+    if (gestureHelper != null) {
+      gestureHelper.showMoreMenu();
+    }
+  }
+
+  // MediaCellViewDetector.Callback: double-tap seek on the left / right third of a playing video
+
+  @Override
+  public boolean canVideoSeekTap () {
+    return gestureHelper != null && gestureHelper.canSeekByTap();
+  }
+
+  @Override
+  public int getVideoTapZone (float x) {
+    return gestureHelper != null ? gestureHelper.getTapZone(x) : 0;
+  }
+
+  @Override
+  public boolean isVideoSeekChainActive (int zone) {
+    return gestureHelper != null && gestureHelper.isSeekChainActive(zone);
+  }
+
+  @Override
+  public void onVideoSeekTap (int zone, float x, float y) {
+    if (gestureHelper != null) {
+      gestureHelper.onSeekTap(zone, x, y);
     }
   }
 

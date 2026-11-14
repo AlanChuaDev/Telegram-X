@@ -656,7 +656,7 @@ public class MediaView extends FrameLayoutFix {
         break;
       }
       case MotionEvent.ACTION_MOVE: {
-        if (listenMove && Math.abs(e.getX() - downStartX) > Screen.getTouchSlopBig() && Math.abs(e.getY() - downStartY) < Screen.getTouchSlopBig()) {
+        if (listenMove && Math.abs(e.getX() - downStartX) > Screen.getTouchSlopBig() && Math.abs(e.getY() - downStartY) < Screen.getTouchSlopBig() && !baseCell.wantsVideoHorizontalDrag(downStartX, downStartY)) {
           listenMove = false;
           startX = e.getX();
           isMoving = true;

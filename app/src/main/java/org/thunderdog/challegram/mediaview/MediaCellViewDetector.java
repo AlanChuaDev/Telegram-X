@@ -47,6 +47,27 @@ public class MediaCellViewDetector implements FactorAnimator.Target {
 
     void getZoomDisplayRect (Rect rect);
     void getZoomContentRect (Rect rect);
+
+    // Video double-tap seek (left / right zone of the view)
+    default boolean canVideoSeekTap () { return false; }
+    default int getVideoTapZone (float x) { return 0; }
+    default boolean isVideoSeekChainActive (int zone) { return false; }
+    default void onVideoSeekTap (int zone, float x, float y) { }
+  }
+
+  /** Gets touch events first; returns true when it owns the current gesture (swipe, long press, ...). */
+  public interface GestureHandler {
+    boolean onTouchEvent (MotionEvent e);
+  }
+
+  private @Nullable GestureHandler gestureHandler;
+
+  public void setGestureHandler (@Nullable GestureHandler handler) {
+    this.gestureHandler = handler;
+  }
+
+  public boolean isZoomed () {
+    return zoom > 1f;
   }
 
   private final View target;
@@ -67,6 +88,13 @@ public class MediaCellViewDetector implements FactorAnimator.Target {
   private float downStartX, downStartY;
 
   public boolean onTouchEvent (MotionEvent e) {
+    if (gestureHandler != null && gestureHandler.onTouchEvent(e)) {
+      listenClick = false;
+      cancelClick();
+      lastClickTime = 0;
+      return true;
+    }
+
     int action = e.getActionMasked();
 
     int pointerCount = e.getPointerCount();
@@ -134,6 +162,23 @@ public class MediaCellViewDetector implements FactorAnimator.Target {
 
   private void onClick (float x, float y) {
     cancelClick();
+    if (zoom == 1f && callback.canVideoSeekTap()) {
+      final int zone = callback.getVideoTapZone(x);
+      if (zone != 0) {
+        final long now = SystemClock.uptimeMillis();
+        final boolean secondTap = now - lastClickTime <= DOUBLE_TAP_DELAY && callback.getVideoTapZone(lastClickX) == zone;
+        if (callback.isVideoSeekChainActive(zone) || secondTap) {
+          lastClickTime = 0;
+          callback.onVideoSeekTap(zone, x, y);
+          return;
+        }
+        lastClickX = x;
+        lastClickY = y;
+        lastClickTime = now;
+        scheduleClick();
+        return;
+      }
+    }
     if (!callback.canDoubleTap(x, y)) {
       callback.onClick(x, y);
       return;

@@ -248,11 +248,13 @@ public final class VideoGestureHelper implements MediaCellViewDetector.GestureHa
     return state != STATE_IDLE && state != STATE_IGNORED;
   }
 
-  private final Runnable longPressRunnable = () -> {
+  private final Runnable longPressRunnable = this::onLongPress;
+
+  private void onLongPress () {
     if (state == STATE_IDLE && gestureAvailable && cell.isPlaying()) {
       beginSpeedBoost();
     }
-  };
+  }
 
   private void cancelLongPress () {
     overlay.removeCallbacks(longPressRunnable);

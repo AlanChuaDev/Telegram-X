@@ -20,7 +20,12 @@ jobs:
           distribution: temurin
           java-version: 25
       - name: Setup SDK/NDK/Rust
-        run: scripts/setup.sh
+        run: |
+          mkdir -p /tmp/fakebin
+          printf '#!/bin/sh\nexit 0\n' > /tmp/fakebin/tput
+          chmod +x /tmp/fakebin/tput
+          export PATH=/tmp/fakebin:$PATH
+          scripts/setup.sh
       - name: Add API credentials
         run: |
           echo "telegram.api_id=${{ secrets.TG_API_ID }}" >> local.properties

@@ -19,6 +19,18 @@ jobs:
         with:
           distribution: temurin
           java-version: 25
+      - name: Create keystore
+        run: |
+          keytool -genkeypair -keystore /tmp/debug.keystore \
+            -storepass android -keypass android -alias androiddebugkey \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+          cat > /tmp/keystore.properties <<EOF
+          keystore.file=/tmp/debug.keystore
+          keystore.password=android
+          key.alias=androiddebugkey
+          key.password=android
+          EOF
       - name: Setup SDK/NDK/Rust and local.properties
         env:
           TELEGRAM_API_ID: ${{ secrets.TG_API_ID }}
@@ -27,16 +39,13 @@ jobs:
           APP_NAME: Telegram X
           APP_DOWNLOAD_URL: https://github.com/AlanChuaDev/Telegram-X/releases
           APP_SOURCES_URL: https://github.com/AlanChuaDev/Telegram-X
+          KEYSTORE_FILE: /tmp/keystore.properties
         run: |
           mkdir -p /tmp/fakebin
           printf '#!/bin/sh\nexit 0\n' > /tmp/fakebin/tput
           chmod +x /tmp/fakebin/tput
           export PATH=/tmp/fakebin:$PATH
-          touch /tmp/keystore.properties
-          export KEYSTORE_FILE=/tmp/keystore.properties
           scripts/setup.sh
-          echo "---- local.properties (hash hidden) ----"
-          sed 's/telegram.api_hash=.*/telegram.api_hash=***/' local.properties
       - name: Build
         run: ./gradlew :app:assembleLatestDebug -Pabi=arm64
       - uses: actions/upload-artifact@v4

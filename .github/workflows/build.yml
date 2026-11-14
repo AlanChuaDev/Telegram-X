@@ -19,17 +19,24 @@ jobs:
         with:
           distribution: temurin
           java-version: 25
-      - name: Add API credentials
-        run: |
-          echo "telegram.api_id=${{ secrets.TG_API_ID }}" >> local.properties
-          echo "telegram.api_hash=${{ secrets.TG_API_HASH }}" >> local.properties
-      - name: Setup SDK/NDK/Rust
+      - name: Setup SDK/NDK/Rust and local.properties
+        env:
+          TELEGRAM_API_ID: ${{ secrets.TG_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TG_API_HASH }}
+          APP_ID: org.thunderdog.challegram
+          APP_NAME: Telegram X
+          APP_DOWNLOAD_URL: https://github.com/AlanChuaDev/Telegram-X/releases
+          APP_SOURCES_URL: https://github.com/AlanChuaDev/Telegram-X
         run: |
           mkdir -p /tmp/fakebin
           printf '#!/bin/sh\nexit 0\n' > /tmp/fakebin/tput
           chmod +x /tmp/fakebin/tput
           export PATH=/tmp/fakebin:$PATH
+          touch /tmp/keystore.properties
+          export KEYSTORE_FILE=/tmp/keystore.properties
           scripts/setup.sh
+          echo "---- local.properties (hash hidden) ----"
+          sed 's/telegram.api_hash=.*/telegram.api_hash=***/' local.properties
       - name: Build
         run: ./gradlew :app:assembleLatestDebug -Pabi=arm64
       - uses: actions/upload-artifact@v4

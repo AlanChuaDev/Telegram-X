@@ -19,6 +19,10 @@ jobs:
         with:
           distribution: temurin
           java-version: 25
+      - name: Add API credentials
+        run: |
+          echo "telegram.api_id=${{ secrets.TG_API_ID }}" >> local.properties
+          echo "telegram.api_hash=${{ secrets.TG_API_HASH }}" >> local.properties
       - name: Setup SDK/NDK/Rust
         run: |
           mkdir -p /tmp/fakebin
@@ -26,10 +30,6 @@ jobs:
           chmod +x /tmp/fakebin/tput
           export PATH=/tmp/fakebin:$PATH
           scripts/setup.sh
-      - name: Add API credentials
-        run: |
-          echo "telegram.api_id=${{ secrets.TG_API_ID }}" >> local.properties
-          echo "telegram.api_hash=${{ secrets.TG_API_HASH }}" >> local.properties
       - name: Build
         run: ./gradlew :app:assembleLatestDebug -Pabi=arm64
       - uses: actions/upload-artifact@v4

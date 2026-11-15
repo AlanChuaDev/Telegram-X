@@ -513,6 +513,11 @@
     <item name="themeCyan" />
     <item name="themeNightBlue" />
     <item name="themeNightBlack" />
+    <item name="themeGlassViolet" />
+    <item name="themeGlassOcean" />
+    <item name="themeGlassRose" />
+    <item name="themeGlassEmerald" />
+    <item name="themeGlassAmber" />
 
     <item name="themeBlackWhite" />
     <item name="themeWhiteBlack" />

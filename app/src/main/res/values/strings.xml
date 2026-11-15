@@ -1593,6 +1593,11 @@
   <string name="ThemeBlue">Blue</string>
   <string name="ThemeNight">Night Black</string>
   <string name="ThemeNightBlue">Night Blue</string>
+  <string name="ThemeGlassViolet">Glass Violet</string>
+  <string name="ThemeGlassOcean">Glass Ocean</string>
+  <string name="ThemeGlassRose">Glass Rose</string>
+  <string name="ThemeGlassEmerald">Glass Emerald</string>
+  <string name="ThemeGlassAmber">Glass Amber</string>
   <string name="ThemeBlackWhite">Black-white</string>
   <string name="ThemeRed">Red</string>
   <string name="ThemeCustom">Custom</string>

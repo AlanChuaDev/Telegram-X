@@ -22,6 +22,11 @@ import org.thunderdog.challegram.theme.builtin.ThemeClassic;
 import org.thunderdog.challegram.theme.builtin.ThemeCyan;
 import org.thunderdog.challegram.theme.builtin.ThemeDefault;
 import org.thunderdog.challegram.theme.builtin.ThemeGreen;
+import org.thunderdog.challegram.theme.builtin.ThemeGlassViolet;
+import org.thunderdog.challegram.theme.builtin.ThemeGlassOcean;
+import org.thunderdog.challegram.theme.builtin.ThemeGlassRose;
+import org.thunderdog.challegram.theme.builtin.ThemeGlassEmerald;
+import org.thunderdog.challegram.theme.builtin.ThemeGlassAmber;
 import org.thunderdog.challegram.theme.builtin.ThemeNightBlack;
 import org.thunderdog.challegram.theme.builtin.ThemeNightBlue;
 import org.thunderdog.challegram.theme.builtin.ThemeOrange;
@@ -109,6 +114,16 @@ public class ThemeSet {
         return new ThemeNightBlue();
       case ThemeId.NIGHT_BLACK:
         return new ThemeNightBlack();
+      case ThemeId.GLASS_VIOLET:
+        return new ThemeGlassViolet();
+      case ThemeId.GLASS_OCEAN:
+        return new ThemeGlassOcean();
+      case ThemeId.GLASS_ROSE:
+        return new ThemeGlassRose();
+      case ThemeId.GLASS_EMERALD:
+        return new ThemeGlassEmerald();
+      case ThemeId.GLASS_AMBER:
+        return new ThemeGlassAmber();
       case ThemeId.BLACK_WHITE:
         return new ThemeBlackWhite();
 

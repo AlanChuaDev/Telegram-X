@@ -1,0 +1,73 @@
+!
+id: 14
+name: "Glass Rose"
+time: 1731700000
+@
+dark, shadowDepth, wallpaperUsageId: 1
+parentTheme: 10
+#
+attachContact, attachFile, attachInlineBot, attachLocation, attachPhoto, bubble_mediaReply_noWallpaper, bubble_unread_noWallpaper, bubbleIn_background, circleButtonChat, circleButtonOverlay, filling, overlayFilling, unread: #201116
+background, chatBackground, chatKeyboard, iv_chatLinkBackground, iv_preBlockBackground, iv_textCodeBackground, iv_textCodeBackgroundPressed: #180C11
+background_icon, badgeMuted, bubbleIn_time, circleButtonChatIcon, circleButtonOverlayIcon, icon, iv_caption, iv_icon, iv_pageAuthor, iv_pageFooter, textLight, textPlaceholder: #987D87
+background_text, background_textLight: #927A83
+badge, bubbleOut_ticksRead, chatListAction, chatListVerify, checkActive, iconActive, seekDone, sliderActive, ticks, ticksRead, headerBadge: #E2598B
+badgeMutedText:  #000
+bubble_button_noWallpaper, bubble_buttonRipple_noWallpaper:  #00000030
+bubble_chatSeparator, bubbleIn_outline, bubbleIn_separator, bubbleOut_outline, chatSeparator, inputInactive, iv_separator, separator, shareSeparator: #1E1015
+bubble_date, bubble_date_noWallpaper, bubble_overlay: #26151B66
+bubble_messageSelection, bubbleIn_pressed:  #00000020
+bubble_messageSelectionNoWallpaper:  #0000002A
+bubbleIn_progress, chatSendButton, controlActive, inputActive, profileSectionActive, profileSectionActiveContent, progress, promo, textNeutral, textSearchQueryHighlight, togglerActive, togglerPositive: #FD649C
+bubbleIn_text, bubbleOut_text, drawerText, headerButtonIcon, headerLightIcon, headerLightText, introSectionActive, iv_blockQuoteLine, iv_header, iv_pageTitle, iv_text, iv_textCode, iv_textMarked, iv_textReference, playerButton, text, themeBlackWhite, unreadText:  #FFF
+bubbleIn_textLink, circleButtonActive, circleButtonRegular, circleButtonTheme, headerButton, iv_textLink, iv_textMarkedLink, messageAuthor, notificationLink, snackbarUpdate, textLink: #E16190
+bubbleIn_textLinkPressHighlight, iv_textLinkPressHighlight, textLinkPressHighlight: #E1619044
+bubbleOut_background, messageSwipeBackground: #934562
+bubbleOut_chatCorrectChosenFilling, bubbleOut_chatCorrectFilling, bubbleOut_chatVerticalLine, bubbleOut_inlineIcon, bubbleOut_inlineOutline, bubbleOut_inlineText, bubbleOut_messageAuthor, bubbleOut_textLink, bubbleOut_ticks, messageCorrectChosenFilling, messageCorrectFilling: #FF86B2
+bubbleOut_file, bubbleOut_waveformActive, file, bubbleIn_fillingPositive, bubbleIn_fillingPositive_overlay, bubbleOut_fillingPositive, bubbleOut_fillingPositive_overlay: #E16190
+bubbleOut_progress, bubbleOut_separator, bubbleOut_time: #C891A5
+bubbleOut_textLinkPressHighlight: #FF86B240
+bubbleOut_waveformInactive, waveformInactive: #AD6B83
+chatKeyboardButton:  #212121
+chatListIcon, chatListMute, togglerInactive: #997A85
+controlInactive, sliderInactive, togglerInactiveBackground: #664954
+drawer, statusBar:  #00000040
+fileAttach, playerCoverPlaceholder: #190D12
+fillingPressed:  #202020
+headerBackground, headerLightBackground, notification, notificationPlayer, passcode: #26141B
+headerBadgeMuted: #987D87
+headerPlaceholder:  #FFFFFF10
+iconLight: #63545A
+inlineIcon, inlineOutline, inlineText: #DC5F8D
+introSection:  #818181
+iv_blockQuote:  #FCFCFC
+iv_pageSubtitle: #9C818B
+iv_pullQuote:  #F9F9F9
+iv_textReferenceBackground:  #F2F2F22A
+iv_textReferenceBackgroundPressed:  #E0E0E030
+iv_textReferenceOutline:  #FFF4
+iv_textReferenceOutlinePressed:  #FFFFFF20
+messageSelection: #E1619010
+messageVerticalLine: #BD537A
+nameInactive, lineInactive, themeNightBlack:  #6A6A6A
+notificationSecure, textSecure:  #78E27E
+placeholder:  #FFFFFF0C
+playerButtonActive: #E0588A
+playerCoverIcon: #826972
+previewBackground:  #00000070
+seekEmpty: #170B10
+seekReady: #4E2A37
+textSelectionHighlight: #5D3544
+togglerActiveBackground, togglerPositiveBackground: #974161
+tooltip:  #000E
+tooltip_outline: #93456220
+waveformActive: #5E253A
+fillingActive: #987D8726
+fillingActiveContent:  #FFF
+bubbleIn_fillingActive: #987D8726
+bubbleIn_fillingActiveContent:  #FFF
+bubbleOut_fillingActive: #C891A526
+bubbleOut_fillingActiveContent:  #FFF
+blockQuoteText, blockQuoteLine: #C5A4B0
+bubbleIn_blockQuoteText, bubbleIn_blockQuoteLine: #AD8D99
+bubbleOut_blockQuoteText, bubbleOut_blockQuoteLine: #E3A6BC
+themeGlassRose: #FF6B9A

@@ -246,6 +246,11 @@ public class TGBackground {
       case ThemeId.BLACK_WHITE:
       case ThemeId.NIGHT_BLACK:
       case ThemeId.NIGHT_BLUE:
+      case ThemeId.GLASS_VIOLET:
+      case ThemeId.GLASS_OCEAN:
+      case ThemeId.GLASS_ROSE:
+      case ThemeId.GLASS_EMERALD:
+      case ThemeId.GLASS_AMBER:
         return 0; // Disabled by default
 
       case ThemeId.BLUE:

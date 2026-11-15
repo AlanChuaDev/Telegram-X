@@ -97,6 +97,16 @@ public class ThemeManager implements FactorAnimator.Target, GlobalAccountListene
         return R.string.ThemeNight;
       case ThemeId.NIGHT_BLUE:
         return R.string.ThemeNightBlue;
+      case ThemeId.GLASS_VIOLET:
+        return R.string.ThemeGlassViolet;
+      case ThemeId.GLASS_OCEAN:
+        return R.string.ThemeGlassOcean;
+      case ThemeId.GLASS_ROSE:
+        return R.string.ThemeGlassRose;
+      case ThemeId.GLASS_EMERALD:
+        return R.string.ThemeGlassEmerald;
+      case ThemeId.GLASS_AMBER:
+        return R.string.ThemeGlassAmber;
       case ThemeId.BLACK_WHITE:
         return R.string.ThemeBlackWhite;
       case ThemeId.CUSTOM:
@@ -141,6 +151,11 @@ public class ThemeManager implements FactorAnimator.Target, GlobalAccountListene
       ThemeId.PINK,
       ThemeId.CYAN,
       ThemeId.NIGHT_BLUE,
+      ThemeId.GLASS_VIOLET,
+      ThemeId.GLASS_OCEAN,
+      ThemeId.GLASS_ROSE,
+      ThemeId.GLASS_EMERALD,
+      ThemeId.GLASS_AMBER,
       ThemeId.NIGHT_BLACK,
       ThemeId.BLACK_WHITE,
       ThemeId.WHITE_BLACK,
@@ -153,6 +168,11 @@ public class ThemeManager implements FactorAnimator.Target, GlobalAccountListene
       ThemeId.PINK,
       ThemeId.CYAN,
       ThemeId.NIGHT_BLUE,
+      ThemeId.GLASS_VIOLET,
+      ThemeId.GLASS_OCEAN,
+      ThemeId.GLASS_ROSE,
+      ThemeId.GLASS_EMERALD,
+      ThemeId.GLASS_AMBER,
       ThemeId.NIGHT_BLACK
     };
     List<ThemeInfo> themes = new ArrayList<>(builtInThemeIds.length);
@@ -498,6 +518,11 @@ public class ThemeManager implements FactorAnimator.Target, GlobalAccountListene
     switch (themeId) {
       case ThemeId.BLACK_WHITE:
       case ThemeId.NIGHT_BLUE:
+      case ThemeId.GLASS_VIOLET:
+      case ThemeId.GLASS_OCEAN:
+      case ThemeId.GLASS_ROSE:
+      case ThemeId.GLASS_EMERALD:
+      case ThemeId.GLASS_AMBER:
       case ThemeId.BLUE:
       case ThemeId.CYAN:
       case ThemeId.GREEN:
@@ -626,6 +651,11 @@ public class ThemeManager implements FactorAnimator.Target, GlobalAccountListene
       case ThemeId.BLUE:
       case ThemeId.NIGHT_BLACK:
       case ThemeId.NIGHT_BLUE:
+      case ThemeId.GLASS_VIOLET:
+      case ThemeId.GLASS_OCEAN:
+      case ThemeId.GLASS_ROSE:
+      case ThemeId.GLASS_EMERALD:
+      case ThemeId.GLASS_AMBER:
       case ThemeId.BLACK_WHITE:
       case ThemeId.WHITE_BLACK:
       case ThemeId.RED:

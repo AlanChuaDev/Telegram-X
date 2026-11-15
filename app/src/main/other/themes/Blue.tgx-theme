@@ -186,6 +186,11 @@ textSelectionHighlight: #ACE0F4
 themeCyan: #00ACC1
 themeGreen: #43A047
 themeNightBlue: #456A93
+themeGlassViolet: #9B7BFF
+themeGlassOcean: #4D9BFF
+themeGlassRose: #FF6B9A
+themeGlassEmerald: #34D399
+themeGlassAmber: #FFB347
 themeOrange: #FB8C00
 themePink: #F06292
 themeRed: #E52929

@@ -247,6 +247,16 @@ public class Theme {
         return ColorId.themeNightBlack;
       case ThemeId.NIGHT_BLUE:
         return ColorId.themeNightBlue;
+      case ThemeId.GLASS_VIOLET:
+        return ColorId.themeGlassViolet;
+      case ThemeId.GLASS_OCEAN:
+        return ColorId.themeGlassOcean;
+      case ThemeId.GLASS_ROSE:
+        return ColorId.themeGlassRose;
+      case ThemeId.GLASS_EMERALD:
+        return ColorId.themeGlassEmerald;
+      case ThemeId.GLASS_AMBER:
+        return ColorId.themeGlassAmber;
       case ThemeId.ORANGE:
         return ColorId.themeOrange;
       case ThemeId.PINK:

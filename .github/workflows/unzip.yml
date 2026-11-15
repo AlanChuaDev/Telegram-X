@@ -1,0 +1,59 @@
+name: Unzip uploaded updates
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'updates/*.zip'
+permissions:
+  contents: write
+concurrency:
+  group: unzip-updates
+  cancel-in-progress: false
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack every zip in updates/
+        run: |
+          python3 - <<'PY'
+          import glob, os, posixpath, zipfile
+
+          zips = sorted(glob.glob('updates/*.zip'))
+          if not zips:
+              print('no zip found, nothing to do')
+          for z in zips:
+              print('==', z)
+              written, skipped = 0, 0
+              with zipfile.ZipFile(z) as zf:
+                  for info in zf.infolist():
+                      name = info.filename.replace('\\', '/')
+                      if name.endswith('/') or name.startswith('__MACOSX/') or name.endswith('.DS_Store'):
+                          continue
+                      norm = posixpath.normpath(name)
+                      # never write outside the repo, never touch the updates folder or workflows
+                      if norm.startswith('/') or norm == '..' or norm.startswith('../') or '/../' in name:
+                          print('skip (unsafe path):', name); skipped += 1; continue
+                      if norm.startswith('.git/') or norm.startswith('updates/'):
+                          print('skip (protected):', name); skipped += 1; continue
+                      if norm.startswith('.github/workflows/'):
+                          print('skip (workflow files must be edited on GitHub by hand):', name); skipped += 1; continue
+                      os.makedirs(os.path.dirname(norm) or '.', exist_ok=True)
+                      with zf.open(info) as src, open(norm, 'wb') as dst:
+                          dst.write(src.read())
+                      print('wrote', norm); written += 1
+              print(f'{z}: {written} files written, {skipped} skipped')
+              os.remove(z)
+          PY
+      - name: Commit the result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "nothing changed"
+          else
+            git commit -m "Apply uploaded update zip"
+            git pull --rebase origin main
+            git push origin main
+          fi

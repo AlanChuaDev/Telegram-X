@@ -90,6 +90,7 @@ import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.telegram.TdlibThread;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.GlassUI;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
@@ -2028,7 +2029,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         drawBubble(c, Paints.fillingPaint(Utils.alphaColor((1f - lineFactor) * .2f, 0xff000000)), false);
         c.restore();
       }*/
-      if (lineFactor != 1f) {
+      if (lineFactor != 1f && !GlassUI.isActive()) {
         drawBubbleShadow(c, 1f - lineFactor);
       }
       if (lineFactor != 0f) {
@@ -2039,7 +2040,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           drawBubble(c, Paints.getProgressPaint(ColorUtils.alphaColor(lineFactor, outlineColor), outlineWidth), true, 0);
         }
       }
-      drawBubble(c, Paints.fillingPaint(bubbleColor), false, 0);
+      if (GlassUI.isActive()) {
+        final boolean glassOut = isOutgoingBubble() && !useCircleBubble();
+        drawBubble(c, Paints.fillingPaint(glassOut ? ColorUtils.alphaColor(.82f, bubbleColor) : 0x1CFFFFFF), false, 0);
+        drawBubble(c, Paints.getProgressPaint(glassOut ? 0x47FFFFFF : 0x2EFFFFFF, Math.max(1, Screen.dp(.75f))), true, 0);
+      } else {
+        drawBubble(c, Paints.fillingPaint(bubbleColor), false, 0);
+      }
     }
 
     // Content universal

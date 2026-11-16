@@ -205,6 +205,7 @@ import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.GlassUI;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.TGBackground;
 import org.thunderdog.challegram.theme.Theme;
@@ -742,6 +743,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     bottomSpace = new FillingSpace(context);
     bottomSpace.setLayoutParams(params);
     bottomSpace.setThemedBackground(ColorId.filling, this);
+    if (GlassUI.isActive()) {
+      bottomSpace.setBackground(GlassUI.barDrawable());
+    }
 
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
     params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
@@ -800,6 +804,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       inputView.setLinkTextColor(Theme.textLinkColor());
       addThemeLinkTextColorListener(inputView, ColorId.textLink);
       ViewSupport.setThemedBackground(inputView, ColorId.filling, this);
+      if (GlassUI.isActive()) {
+        inputView.setBackground(GlassUI.barDrawable());
+      }
       inputView.setHighlightColor(Theme.fillingTextSelectionColor());
       addThemeHighlightColorListener(inputView, ColorId.textSelectionHighlight);
       bindLocaleChanger(inputView.setController(this));

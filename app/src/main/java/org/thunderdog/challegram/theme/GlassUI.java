@@ -2,6 +2,10 @@ package org.thunderdog.challegram.theme;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.PixelFormat;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.graphics.Paint;
 import android.graphics.RadialGradient;
 import android.graphics.RectF;
@@ -117,33 +121,59 @@ public final class GlassUI {
     c.drawRect(0f, bottom - h, width, bottom, edgePaint);
   }
 
+  // ---------------------------------------------------------------- bars
+
+  /** Translucent bar background (input bar etc.): dark tint with a light hairline on top. */
+  public static Drawable barDrawable () {
+    return new Drawable() {
+      private final Paint paint = new Paint();
+
+      @Override
+      public void draw (Canvas c) {
+        Rect b = getBounds();
+        paint.setColor(headerColor(0xC0101828));
+        c.drawRect(b, paint);
+        paint.setColor(0x30FFFFFF);
+        c.drawRect(b.left, b.top, b.right, b.top + Math.max(1, Screen.dp(.75f)), paint);
+      }
+
+      @Override
+      public void setAlpha (int alpha) { }
+
+      @Override
+      public void setColorFilter (ColorFilter colorFilter) { }
+
+      @Override
+      public int getOpacity () {
+        return PixelFormat.TRANSLUCENT;
+      }
+    };
+  }
+
   // ---------------------------------------------------------------- backdrop
 
-  /** A view that paints the glass backdrop. Put it under a transparent list. Paints nothing for other themes. */
-  public static final class BackdropView extends View {
+  /** Draws the glass backdrop (dark base plus soft coloured light blobs) into any canvas. */
+  public static final class Backdrop {
     private final Paint basePaint = new Paint();
     private final Paint blobPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private RadialGradient[] blobs;
-    private final float[][] blobCenters = new float[3][3]; // x, y, radius
     private int shaderThemeId = -1;
     private int shaderWidth, shaderHeight;
 
-    public BackdropView (Context context) {
-      super(context);
-    }
-
-    private void buildShaders (int themeId, int w, int h) {
+    private void build (int themeId, int w, int h) {
       int[] p = palette(themeId);
       float size = Math.max(w, h);
-      blobCenters[0][0] = -.05f * w; blobCenters[0][1] = .05f * h; blobCenters[0][2] = .55f * size;
-      blobCenters[1][0] = 1.05f * w; blobCenters[1][1] = .45f * h; blobCenters[1][2] = .5f * size;
-      blobCenters[2][0] = .1f * w;   blobCenters[2][1] = 1.02f * h; blobCenters[2][2] = .55f * size;
+      float[][] centers = {
+        {-.05f * w, .05f * h, .55f * size},
+        {1.05f * w, .45f * h, .5f * size},
+        {.1f * w, 1.02f * h, .55f * size}
+      };
       blobs = new RadialGradient[3];
       for (int i = 0; i < 3; i++) {
         int color = p[i + 1];
-        int center = (color & 0x00FFFFFF) | 0x99000000; // ~60% at the middle
+        int center = (color & 0x00FFFFFF) | 0x99000000;
         int edge = color & 0x00FFFFFF;
-        blobs[i] = new RadialGradient(blobCenters[i][0], blobCenters[i][1], blobCenters[i][2], center, edge, Shader.TileMode.CLAMP);
+        blobs[i] = new RadialGradient(centers[i][0], centers[i][1], centers[i][2], center, edge, Shader.TileMode.CLAMP);
       }
       basePaint.setColor(p[0]);
       shaderThemeId = themeId;
@@ -151,25 +181,36 @@ public final class GlassUI {
       shaderHeight = h;
     }
 
-    @Override
-    protected void onDraw (Canvas c) {
+    /** Returns true if something was drawn (a Glass theme is active). */
+    public boolean draw (Canvas c, int w, int h) {
       ThemeManager manager = ThemeManager.instance();
       int themeId = manager != null ? manager.currentThemeId() : ThemeId.NONE;
-      if (!isGlassTheme(themeId)) {
-        return;
-      }
-      int w = getMeasuredWidth(), h = getMeasuredHeight();
-      if (w <= 0 || h <= 0) {
-        return;
+      if (!isGlassTheme(themeId) || w <= 0 || h <= 0) {
+        return false;
       }
       if (blobs == null || shaderThemeId != themeId || shaderWidth != w || shaderHeight != h) {
-        buildShaders(themeId, w, h);
+        build(themeId, w, h);
       }
       c.drawRect(0, 0, w, h, basePaint);
       for (RadialGradient blob : blobs) {
         blobPaint.setShader(blob);
         c.drawRect(0, 0, w, h, blobPaint);
       }
+      return true;
+    }
+  }
+
+  /** A view that paints the glass backdrop. Put it under a transparent list. Paints nothing for other themes. */
+  public static final class BackdropView extends View {
+    private final Backdrop backdrop = new Backdrop();
+
+    public BackdropView (Context context) {
+      super(context);
+    }
+
+    @Override
+    protected void onDraw (Canvas c) {
+      backdrop.draw(c, getMeasuredWidth(), getMeasuredHeight());
     }
   }
 }

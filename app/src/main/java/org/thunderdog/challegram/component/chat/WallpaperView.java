@@ -29,6 +29,7 @@ import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.theme.ChatStyleChangeListener;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
+import org.thunderdog.challegram.theme.GlassUI;
 import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.TGBackground;
 import org.thunderdog.challegram.theme.Theme;
@@ -359,8 +360,13 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
 
   public static final int OVERLAY_ALPHA = 0x70;
 
+  private final GlassUI.Backdrop glassBackdrop = new GlassUI.Backdrop();
+
   @Override
   protected void onDraw (Canvas c) {
+    if (glassBackdrop.draw(c, getMeasuredWidth(), getMeasuredHeight())) {
+      return;
+    }
     if (manager.useBubbles()) {
       layoutReceivers();
       if (!isAnimatingChanges()) {

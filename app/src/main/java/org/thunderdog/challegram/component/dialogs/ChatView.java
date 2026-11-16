@@ -52,6 +52,7 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.theme.GlassUI;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -575,6 +576,10 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
 
     if (isDragging) {
       c.drawColor(ColorUtils.alphaColor(.8f, Theme.fillingColor()));
+    }
+
+    if (GlassUI.isActive()) {
+      GlassUI.drawCard(c, Screen.dp(6f), Screen.dp(2f), viewWidth - Screen.dp(6f), getMeasuredHeight() - Screen.dp(2f), Screen.dp(20f));
     }
 
     c.drawText(chat.getTime(), (rtl ? viewWidth - chat.getTimeLeft() - chat.getTimeWidth() : chat.getTimeLeft()), getTitleTop(chatListMode), timePaint);

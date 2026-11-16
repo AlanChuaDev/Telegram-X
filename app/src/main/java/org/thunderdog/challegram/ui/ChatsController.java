@@ -71,6 +71,7 @@ import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.navigation.ViewPagerController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.theme.GlassUI;
 import org.thunderdog.challegram.telegram.ChatFilter;
 import org.thunderdog.challegram.telegram.ChatFolderListener;
 import org.thunderdog.challegram.telegram.ChatListListener;
@@ -264,7 +265,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       final int childCount = parent.getChildCount();
       final int separatorLeft = Screen.dp(72f);
       final int separatorHeight = Math.max(1, Screen.dp(.5f, 3f));
-      final int separatorColor = Theme.separatorColor();
+      final int separatorColor = GlassUI.isActive() ? 0 : Theme.separatorColor();
       final float maxAlpha = Theme.getShadowDepth();
       final float lineFactor = Theme.getSeparatorReplacement();
       final float shadowFactor = 1f - lineFactor;
@@ -504,6 +505,13 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     chatsView.setHasFixedSize(true);
     chatsView.addItemDecoration(new ChatPinSeparatorDecoration(this));
     ViewSupport.setThemedBackground(chatsView, ColorId.filling, this);
+    if (GlassUI.isActive()) {
+      // Glass themes: let the backdrop show through the list
+      chatsView.setBackground(null);
+      GlassUI.BackdropView glassBackdrop = new GlassUI.BackdropView(context);
+      glassBackdrop.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+      contentView.addView(glassBackdrop, 0);
+    }
 
     touchHelper = new ItemTouchHelper(new ItemTouchHelper.Callback() {
       @Override

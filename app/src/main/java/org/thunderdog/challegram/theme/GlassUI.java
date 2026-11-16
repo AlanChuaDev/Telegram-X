@@ -82,6 +82,41 @@ public final class GlassUI {
     c.drawLine(left + inset, top + highlightPaint.getStrokeWidth(), right - inset, top + highlightPaint.getStrokeWidth(), highlightPaint);
   }
 
+  private static final Paint ringPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+  private static final Paint edgePaint = new Paint();
+
+  static {
+    ringPaint.setStyle(Paint.Style.STROKE);
+    ringPaint.setColor(0x66FFFFFF);
+    edgePaint.setColor(0x30FFFFFF);
+  }
+
+  /** Thin light ring around a round avatar. */
+  public static void drawRing (Canvas c, float cx, float cy, float radius) {
+    ringPaint.setStrokeWidth(Math.max(1f, Screen.dp(1.25f)));
+    c.drawCircle(cx, cy, radius, ringPaint);
+  }
+
+  /** Colour for the top bar: a translucent dark tint instead of the flat opaque colour. */
+  public static int headerColor (int fallback) {
+    ThemeManager manager = ThemeManager.instance();
+    if (manager == null || !isGlassTheme(manager.currentThemeId())) {
+      return fallback;
+    }
+    int[] p = palette(manager.currentThemeId());
+    int base = p[0], tint = p[1];
+    int r = ((base >> 16 & 0xFF) * 6 + (tint >> 16 & 0xFF) * 4) / 10;
+    int g = ((base >> 8 & 0xFF) * 6 + (tint >> 8 & 0xFF) * 4) / 10;
+    int b = ((base & 0xFF) * 6 + (tint & 0xFF) * 4) / 10;
+    return 0xC8000000 | (r << 16) | (g << 8) | b;
+  }
+
+  /** Light hairline along the bottom edge of the top bar. */
+  public static void drawHeaderEdge (Canvas c, float width, float bottom) {
+    float h = Math.max(1f, Screen.dp(.75f));
+    c.drawRect(0f, bottom - h, width, bottom, edgePaint);
+  }
+
   // ---------------------------------------------------------------- backdrop
 
   /** A view that paints the glass backdrop. Put it under a transparent list. Paints nothing for other themes. */

@@ -267,8 +267,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       final int separatorHeight = Math.max(1, Screen.dp(.5f, 3f));
       final int separatorColor = GlassUI.isActive() ? 0 : Theme.separatorColor();
       final float maxAlpha = Theme.getShadowDepth();
-      final float lineFactor = Theme.getSeparatorReplacement();
-      final float shadowFactor = 1f - lineFactor;
+      final boolean glass = GlassUI.isActive();
+      final float lineFactor = glass ? 0f : Theme.getSeparatorReplacement();
+      final float shadowFactor = glass ? 0f : 1f - lineFactor;
 
       boolean needLiveLocation = false;
       int liveLocationClipTop = 0, liveLocationRight = 0, liveLocationTop = 0, liveLocationBottom = 0;
@@ -312,7 +313,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
                 View nextView = parent.getLayoutManager().findViewByPosition(adapterPosition + 1);
                 final int bottom = (nextView != null ? nextView.getTop() : parent.getLayoutManager().getDecoratedBottom(view)) + offsetTop;
 
-                c.drawRect(0, top, right, bottom, Paints.fillingPaint(Theme.backgroundColor()));
+                if (!glass) {
+                  c.drawRect(0, top, right, bottom, Paints.fillingPaint(Theme.backgroundColor()));
+                }
 
                 if (shadowFactor != 0f) {
                   final int alpha = (int) (255f * maxAlpha * shadowFactor);
@@ -350,7 +353,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         } else if (viewType == ChatsAdapter.VIEW_TYPE_SUGGESTED_CHATS) {
           offsetTop = (int) view.getTranslationY();
           right = view.getWidth();
-          c.drawRect(view.getX(), view.getY(), view.getX() + view.getWidth(), view.getY() + view.getHeight(), Paints.fillingPaint(Theme.backgroundColor()));
+          if (!glass) {
+            c.drawRect(view.getX(), view.getY(), view.getX() + view.getWidth(), view.getY() + view.getHeight(), Paints.fillingPaint(Theme.backgroundColor()));
+          }
         } else {
           offsetTop = (int) view.getTranslationY();
           right = view.getWidth();
@@ -368,7 +373,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
             }
           }
           if (decoratedTop < top && top > 0) {
-            c.drawRect(0, fillingTop, right, top, Paints.fillingPaint(Theme.backgroundColor()));
+            if (!glass) {
+              c.drawRect(0, fillingTop, right, top, Paints.fillingPaint(Theme.backgroundColor()));
+            }
             needLiveLocation = true;
             liveLocationClipTop = fillingTop;
             liveLocationRight = right;
@@ -493,6 +500,12 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     chatsView = (ChatsRecyclerView) Views.inflate(context(), R.layout.recycler_chats, contentView);
     chatsView.setId(R.id.chats_list);
     chatsView.setMeasureListener((v, oldWidth, oldHeight, newWidth, newHeight) -> {
+      if (newWidth != oldWidth && GlassUI.isActive()) {
+        final int sidePadding = Math.max(0, (newWidth - Screen.dp(620f)) / 2);
+        if (chatsView.getPaddingLeft() != sidePadding) {
+          chatsView.post(() -> chatsView.setPadding(sidePadding, chatsView.getPaddingTop(), sidePadding, chatsView.getPaddingBottom()));
+        }
+      }
       if (newHeight != oldHeight && adapter.hasArchive() && hideArchive && adapter.getItemCount() > 0) {
         adapter.notifyLastItemChanged();
       }

@@ -738,6 +738,10 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
       avatarReceiver.drawPlaceholder(c);
     }
     avatarReceiver.draw(c);
+    if (GlassUI.isActive()) {
+      final float ringR = getAvatarSize(chatListMode) / 2f;
+      GlassUI.drawRing(c, getAvatarLeft(chatListMode) + ringR, getAvatarTop(chatListMode) + ringR, ringR);
+    }
 
     DrawAlgorithms.drawIcon(c, avatarReceiver, 315f, chat.getScheduleAnimator().getFloatValue(), Theme.fillingColor(), getSparseDrawable(R.drawable.baseline_watch_later_10, ColorId.badgeMuted), PorterDuffPaint.get(ColorId.badgeMuted, chat.getScheduleAnimator().getFloatValue()));
     DrawAlgorithms.drawSimplestCheckBox(c, avatarReceiver, isSelected.getFloatValue());

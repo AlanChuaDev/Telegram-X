@@ -45,6 +45,7 @@ import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.GlassUI;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
@@ -404,7 +405,10 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
       drawOngoingBar(c);
     }
     if (fillFactor == 1f && hideFactor == 0f) {
-      c.drawRect(0f, 0f, width, fillingBottom, Paints.fillingPaint(color));
+      c.drawRect(0f, 0f, width, fillingBottom, Paints.fillingPaint(GlassUI.headerColor(color)));
+      if (GlassUI.isActive()) {
+        GlassUI.drawHeaderEdge(c, width, fillingBottom);
+      }
       if (radiusFactor != 0f && radiusColor != 0) {
         c.save();
         c.clipRect(0, 0, width, fillingBottom);
@@ -420,9 +424,9 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
       ShadowView.drawDropShadow(c, 0, width, (int) shadowTop, dropShadowAlpha);
     } else {
       if (fillFactor == 1f) {
-        c.drawRect(0f, 0f, width, fillingBottom, Paints.fillingPaint(color));
+        c.drawRect(0f, 0f, width, fillingBottom, Paints.fillingPaint(GlassUI.headerColor(color)));
       } else {
-        c.drawRect(0f, 0f, width, fillingBottom * fillFactor, Paints.fillingPaint(color));
+        c.drawRect(0f, 0f, width, fillingBottom * fillFactor, Paints.fillingPaint(GlassUI.headerColor(color)));
       }
     }
     if (navigationController != null) {
